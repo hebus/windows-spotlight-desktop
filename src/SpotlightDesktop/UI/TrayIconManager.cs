@@ -11,6 +11,7 @@ public sealed class TrayIconManager : IDisposable
     private readonly StartupManager _startupManager;
     private readonly Action _requestExit;
     private readonly ToolStripMenuItem _startupItem;
+    private readonly HotCornerWatcher _hotCornerWatcher;
     private FlyoutWindow? _flyout;
 
     public TrayIconManager(SpotlightEngine engine, RotationHostedService rotationService, StartupManager startupManager, Action requestExit)
@@ -45,12 +46,11 @@ public sealed class TrayIconManager : IDisposable
             ContextMenuStrip = menu,
             Visible = true
         };
-        _notifyIcon.MouseClick += (_, e) =>
-        {
-            if (e.Button == MouseButtons.Left) ToggleFlyout();
-        };
 
-        _engine.CurrentImageChanged += _ => ShowFlyoutAutoHide();
+        // Le flyout n'apparait que lorsque la souris survole l'angle superieur droit
+        // de l'ecran principal (pas de popup automatique, pas de clic sur l'icone).
+        _hotCornerWatcher = new HotCornerWatcher();
+        _hotCornerWatcher.CornerEntered += () => ShowFlyoutAutoHide();
     }
 
     private async Task OnNextAsync()
@@ -76,18 +76,6 @@ public sealed class TrayIconManager : IDisposable
         System.Diagnostics.Process.Start("explorer.exe", AppPaths.ImagesFolder);
     }
 
-    private void ToggleFlyout()
-    {
-        if (_flyout is { IsVisible: true })
-        {
-            _flyout.Hide();
-        }
-        else
-        {
-            ShowFlyoutAutoHide();
-        }
-    }
-
     private void ShowFlyoutAutoHide()
     {
         System.Windows.Application.Current?.Dispatcher.Invoke(() =>
@@ -99,6 +87,7 @@ public sealed class TrayIconManager : IDisposable
 
     public void Dispose()
     {
+        _hotCornerWatcher.Dispose();
         _notifyIcon.Visible = false;
         _notifyIcon.Dispose();
     }
