@@ -6,10 +6,12 @@ Application .NET (WPF + tray) qui recree l'experience Windows Spotlight
 - Images Windows Spotlight recuperees via l'API non officielle v4
 - Titre + description composes directement sur l'image
 - La meme image sur tous vos ecrans simultanement (via `SystemParametersInfo`)
-- Icone dans la barre systeme avec popup (flyout) : Image suivante / J'aime / Je n'aime pas
+- Survolez l'angle superieur droit de l'ecran principal : un flyout apparait avec l'image
+  active + 3 suggestions cliquables (clic = nouveau fond d'ecran immediat)
+- Boutons emoji 👍/👎 sur le flyout, pour l'image active uniquement
 - Rotation automatique (par defaut toutes les 4h) + changement manuel a la demande
-- "Je n'aime pas" bannit definitivement l'image (liste noire par hash SHA256)
-- "J'aime" protege l'image de la suppression automatique et la fait revenir plus souvent
+- "👎 Je n'aime pas" bannit definitivement l'image (liste noire par hash SHA256)
+- "👍 J'aime" protege l'image de la suppression automatique et la fait revenir plus souvent
 
 Ce projet remplace, pour l'usage bureau, le projet plus simple
 [windows-spotlight-sync](https://github.com/hebus/windows-spotlight-sync) (qui reste
@@ -35,6 +37,26 @@ l'icone pour afficher le flyout, clic droit pour le menu complet.
 ```powershell
 dotnet publish src\SpotlightDesktop\SpotlightDesktop.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true
 ```
+
+⚠️ **Important** : malgre `PublishSingleFile=true`, WPF genere quelques DLL natives a cote
+de l'exe (`wpfgfx_cor3.dll`, `PresentationNative_cor3.dll`, `D3DCompiler_47_cor3.dll`,
+`PenImc_cor3.dll`, `vcruntime140_cor3.dll`) — elles ne sont **pas** embarquees dans l'exe.
+Il faut copier **tout le contenu** du dossier `publish\` (pas seulement le `.exe`) vers son
+emplacement final, sinon l'application plante immediatement au lancement (crash natif dans
+`KERNELBASE.dll`, sans exception .NET visible puisqu'il se produit avant meme le demarrage
+du code applicatif).
+
+Pour une installation propre :
+
+```powershell
+$installDir = "$env:LOCALAPPDATA\Programs\SpotlightDesktop"
+New-Item -ItemType Directory -Force -Path $installDir | Out-Null
+$publishDir = "src\SpotlightDesktop\bin\Release\net9.0-windows10.0.19041.0\win-x64\publish"
+Copy-Item "$publishDir\*" -Destination $installDir -Force -Exclude "*.pdb"
+```
+
+Puis pointez l'entree de demarrage automatique (menu tray, voir plus bas) ou le raccourci
+vers `$installDir\SpotlightDesktop.exe`.
 
 ## Donnees et configuration
 

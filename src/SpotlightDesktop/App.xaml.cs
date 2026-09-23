@@ -20,6 +20,17 @@ public partial class App : System.Windows.Application
     {
         base.OnStartup(e);
 
+        Directory.CreateDirectory(AppPaths.RootFolder);
+        Directory.CreateDirectory(AppPaths.LogsFolder);
+
+        DispatcherUnhandledException += (_, args) => LogCrash("DispatcherUnhandledException", args.Exception);
+        AppDomain.CurrentDomain.UnhandledException += (_, args) => LogCrash("AppDomainUnhandledException", args.ExceptionObject);
+        TaskScheduler.UnobservedTaskException += (_, args) =>
+        {
+            LogCrash("UnobservedTaskException", args.Exception);
+            args.SetObserved();
+        };
+
         _mutex = new Mutex(initiallyOwned: true, @"Global\SpotlightDesktop-SingleInstance", out bool createdNew);
         if (!createdNew)
         {
@@ -27,9 +38,6 @@ public partial class App : System.Windows.Application
             Shutdown();
             return;
         }
-
-        Directory.CreateDirectory(AppPaths.RootFolder);
-        Directory.CreateDirectory(AppPaths.LogsFolder);
 
         var settings = await LoadOrCreateSettingsAsync();
 
@@ -96,5 +104,19 @@ public partial class App : System.Windows.Application
         await using var writeStream = File.Create(AppPaths.SettingsFile);
         await JsonSerializer.SerializeAsync(writeStream, defaults, new JsonSerializerOptions { WriteIndented = true });
         return defaults;
+    }
+
+    private static void LogCrash(string source, object? exceptionObj)
+    {
+        try
+        {
+            var path = Path.Combine(AppPaths.LogsFolder, $"crash-{DateTime.Now:yyyyMMdd-HHmmss-fff}.log");
+            Directory.CreateDirectory(AppPaths.LogsFolder);
+            File.WriteAllText(path, $"[{source}]{Environment.NewLine}{exceptionObj}");
+        }
+        catch
+        {
+            // Rien de mieux a faire si meme l'ecriture du log de crash echoue.
+        }
     }
 }

@@ -7,7 +7,7 @@ namespace SpotlightDesktop.UI;
 /// <summary>Detecte quand la souris entre dans l'angle superieur droit de l'ecran principal.</summary>
 public sealed class HotCornerWatcher : IDisposable
 {
-    private const int CornerSize = 60;
+    private const int CornerSize = 12;
 
     private readonly DispatcherTimer _timer;
     private bool _wasInCorner;
