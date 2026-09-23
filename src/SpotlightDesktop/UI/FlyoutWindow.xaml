@@ -9,23 +9,89 @@
         Topmost="True"
         ResizeMode="NoResize"
         SizeToContent="Height"
-        Width="340"
+        Width="360"
         MouseEnter="OnMouseEnter"
         MouseLeave="OnMouseLeave">
+    <Window.Resources>
+        <Style x:Key="ThumbButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}">
+                            <ContentPresenter/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="EmojiButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#33FFFFFF"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="Width" Value="44"/>
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="8">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#55FFFFFF"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
     <Border CornerRadius="12" Background="#F2202020" Padding="16">
         <StackPanel>
-            <Border CornerRadius="8" ClipToBounds="True">
-                <Image Source="{Binding ThumbnailSource}" Height="140" Stretch="UniformToFill"/>
-            </Border>
+            <ItemsControl ItemsSource="{Binding Items}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border x:Name="Thumb" CornerRadius="6" Width="72" Height="72"
+                                BorderThickness="2" BorderBrush="Transparent" Margin="0,0,8,0" ClipToBounds="True">
+                            <Button Style="{StaticResource ThumbButtonStyle}"
+                                    Command="{Binding DataContext.SelectCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                    CommandParameter="{Binding Hash}">
+                                <Image Source="{Binding Thumbnail}" Width="72" Height="72" Stretch="UniformToFill"/>
+                            </Button>
+                        </Border>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                <Setter TargetName="Thumb" Property="BorderBrush" Value="#4FC3F7"/>
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
             <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="Bold" Foreground="White"
-                       Margin="0,10,0,4" TextWrapping="Wrap"/>
+                       Margin="0,12,0,4" TextWrapping="Wrap"/>
             <TextBlock Text="{Binding Description}" FontSize="12" Foreground="#CCCCCC"
                        TextWrapping="Wrap" MaxHeight="80" TextTrimming="CharacterEllipsis"/>
             <TextBlock Text="{Binding Copyright}" FontSize="10" Foreground="#999999" Margin="0,6,0,0"/>
+
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-                <Button Content="Je n'aime pas" Command="{Binding DislikeCommand}" Padding="8,4" Margin="0,0,8,0"/>
-                <Button Content="J'aime" Command="{Binding LikeCommand}" Padding="8,4" Margin="0,0,8,0"/>
-                <Button Content="Suivant" Command="{Binding NextCommand}" Padding="8,4"/>
+                <Button Content="&#128078;" ToolTip="Je n'aime pas" Style="{StaticResource EmojiButtonStyle}"
+                        Command="{Binding DislikeCommand}"/>
+                <Button Content="&#128077;" ToolTip="J'aime" Style="{StaticResource EmojiButtonStyle}" Margin="0"
+                        Command="{Binding LikeCommand}"/>
             </StackPanel>
         </StackPanel>
     </Border>

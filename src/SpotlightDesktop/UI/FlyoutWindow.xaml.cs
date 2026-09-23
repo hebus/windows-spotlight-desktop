@@ -10,22 +10,22 @@ public partial class FlyoutWindow : Window
     private readonly DispatcherTimer _autoHideTimer;
     private readonly FlyoutViewModel _viewModel;
 
-    public FlyoutWindow(SpotlightEngine engine, Func<Task> onNext, Func<Task> onLike, Func<Task> onDislike)
+    public FlyoutWindow(SpotlightEngine engine, Func<string, Task> onSelect, Func<Task> onLike, Func<Task> onDislike)
     {
         InitializeComponent();
 
-        _viewModel = new FlyoutViewModel(engine, onNext, onLike, onDislike);
+        _viewModel = new FlyoutViewModel(engine, onSelect, onLike, onDislike);
         DataContext = _viewModel;
 
         _autoHideTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(6) };
         _autoHideTimer.Tick += (_, _) => { _autoHideTimer.Stop(); Hide(); };
     }
 
-    public void Refresh() => _viewModel.RefreshFromEngine();
+    public async Task RefreshAsync() => await _viewModel.RefreshFromEngineAsync();
 
-    public void ShowNearCursor()
+    public async Task ShowNearCursorAsync()
     {
-        _viewModel.RefreshFromEngine();
+        await _viewModel.RefreshFromEngineAsync();
 
         var cursorPosition = System.Windows.Forms.Cursor.Position;
         var workingArea = Screen.FromPoint(cursorPosition).WorkingArea;

@@ -57,18 +57,27 @@ public sealed class TrayIconManager : IDisposable
     {
         await _engine.ShowNextAsync();
         _rotationService.ResetTimer();
+        if (_flyout is not null) await _flyout.RefreshAsync();
+    }
+
+    private async Task OnSelectAsync(string hash)
+    {
+        await _engine.ShowImageAsync(hash);
+        _rotationService.ResetTimer();
+        if (_flyout is not null) await _flyout.RefreshAsync();
     }
 
     private async Task OnLikeAsync()
     {
         await _engine.LikeCurrentAsync();
-        _flyout?.Refresh();
+        if (_flyout is not null) await _flyout.RefreshAsync();
     }
 
     private async Task OnDislikeAsync()
     {
         await _engine.DislikeCurrentAsync();
         _rotationService.ResetTimer();
+        if (_flyout is not null) await _flyout.RefreshAsync();
     }
 
     private static void OpenImagesFolder()
@@ -78,10 +87,11 @@ public sealed class TrayIconManager : IDisposable
 
     private void ShowFlyoutAutoHide()
     {
-        System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        dispatcher?.InvokeAsync(async () =>
         {
-            _flyout ??= new FlyoutWindow(_engine, OnNextAsync, OnLikeAsync, OnDislikeAsync);
-            _flyout.ShowNearCursor();
+            _flyout ??= new FlyoutWindow(_engine, OnSelectAsync, OnLikeAsync, OnDislikeAsync);
+            await _flyout.ShowNearCursorAsync();
         });
     }
 

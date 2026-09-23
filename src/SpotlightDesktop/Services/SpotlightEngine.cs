@@ -102,6 +102,44 @@ public sealed class SpotlightEngine
         }
     }
 
+    /// <summary>Recharge depuis l'API si le pool d'images a venir est trop bas pour proposer un apercu.</summary>
+    public async Task EnsureUpcomingPoolAsync(int minCount, CancellationToken ct = default)
+    {
+        await _mutex.WaitAsync(ct);
+        try
+        {
+            var pending = _state.Images.Count(i => i.Hash != _state.CurrentImageHash);
+            if (pending < minCount)
+            {
+                await RefreshFromApiAsync(ct);
+            }
+        }
+        finally
+        {
+            _mutex.Release();
+        }
+    }
+
+    /// <summary>Selection ponderee (favoris) d'un apercu des prochaines images, sans consommer l'etat.</summary>
+    public IReadOnlyList<SpotlightImage> SelectUpcoming(int count)
+        => _rotationSelector.SelectMultiple(_state, count, _settings.LikeWeightMultiplier);
+
+    /// <summary>Applique directement l'image choisie (clic sur une vignette du flyout) comme fond d'ecran actif.</summary>
+    public async Task ShowImageAsync(string hash, CancellationToken ct = default)
+    {
+        await _mutex.WaitAsync(ct);
+        try
+        {
+            var image = _state.Images.FirstOrDefault(i => i.Hash == hash);
+            if (image is not null)
+                await ApplyImageAsync(image, ct);
+        }
+        finally
+        {
+            _mutex.Release();
+        }
+    }
+
     public async Task LikeCurrentAsync(CancellationToken ct = default)
     {
         var current = CurrentImage;
