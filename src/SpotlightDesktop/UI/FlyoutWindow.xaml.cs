@@ -34,7 +34,7 @@ public partial class FlyoutWindow : Window
         UpdateLayout();
 
         Left = workingArea.Right - ActualWidth - 16;
-        Top = workingArea.Bottom - ActualHeight - 16;
+        Top = workingArea.Top + 16;
 
         Activate();
         RestartAutoHide();
