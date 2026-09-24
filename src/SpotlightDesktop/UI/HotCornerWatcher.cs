@@ -8,9 +8,11 @@ namespace SpotlightDesktop.UI;
 public sealed class HotCornerWatcher : IDisposable
 {
     private const int CornerSize = 12;
+    private const int DwellTicksRequired = 2;
 
     private readonly DispatcherTimer _timer;
     private bool _wasInCorner;
+    private int _dwellTicks;
 
     public event Action? CornerEntered;
 
@@ -23,19 +25,28 @@ public sealed class HotCornerWatcher : IDisposable
 
     private void CheckCursor()
     {
-        var primary = Screen.PrimaryScreen;
-        if (primary is null) return;
-
-        var bounds = primary.Bounds;
         var pos = Cursor.Position;
+        var screen = Screen.FromPoint(pos);
+
+        var bounds = screen.Bounds;
 
         bool inCorner = pos.X >= bounds.Right - CornerSize && pos.X <= bounds.Right
                          && pos.Y >= bounds.Top && pos.Y <= bounds.Top + CornerSize;
 
-        if (inCorner && !_wasInCorner)
-            CornerEntered?.Invoke();
-
-        _wasInCorner = inCorner;
+        if (inCorner)
+        {
+            _dwellTicks++;
+            if (_dwellTicks >= DwellTicksRequired && !_wasInCorner)
+            {
+                CornerEntered?.Invoke();
+                _wasInCorner = true;
+            }
+        }
+        else
+        {
+            _dwellTicks = 0;
+            _wasInCorner = false;
+        }
     }
 
     public void Dispose() => _timer.Stop();
