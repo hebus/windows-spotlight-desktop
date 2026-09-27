@@ -6,4 +6,5 @@ public sealed class CatalogState
     public string? CurrentImageHash { get; set; }
     public List<SpotlightImage> Images { get; set; } = new();
     public HashSet<string> BlacklistedHashes { get; set; } = new();
+    public DateTimeOffset? LastRefreshAt { get; set; }
 }

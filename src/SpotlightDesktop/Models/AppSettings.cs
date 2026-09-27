@@ -2,7 +2,7 @@ namespace SpotlightDesktop.Models;
 
 public sealed class AppSettings
 {
-    public int RotationIntervalMinutes { get; set; } = 240;
+    public int RotationIntervalMinutes { get; set; } = 180;
     public int MaxImages { get; set; } = 50;
     public int BatchCount { get; set; } = 4;
     public string Locale { get; set; } = "fr-FR";

@@ -47,11 +47,14 @@ public sealed class SpotlightEngine
 
     public SpotlightImage? CurrentImage => _state.Images.FirstOrDefault(i => i.Hash == _state.CurrentImageHash);
 
+    private static readonly TimeSpan MinRefreshInterval = TimeSpan.FromDays(1);
+
     public async Task InitializeAsync(CancellationToken ct = default)
     {
         _state = await _catalogStore.LoadAsync(ct);
 
-        if (_state.Images.Count == 0)
+        var refreshDue = _state.LastRefreshAt is null || DateTimeOffset.UtcNow - _state.LastRefreshAt >= MinRefreshInterval;
+        if (_state.Images.Count == 0 || refreshDue)
         {
             await RefreshFromApiAsync(ct);
         }
@@ -79,6 +82,7 @@ public sealed class SpotlightEngine
         }
 
         _retentionService.Enforce(_state, _settings.MaxImages);
+        _state.LastRefreshAt = DateTimeOffset.UtcNow;
         await _catalogStore.SaveAsync(_state, ct);
     }
 
