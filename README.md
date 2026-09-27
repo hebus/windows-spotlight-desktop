@@ -9,7 +9,7 @@ Application .NET (WPF + tray) qui recree l'experience Windows Spotlight
 - Survolez l'angle superieur droit de l'ecran principal : un flyout apparait avec l'image
   active + 3 suggestions cliquables (clic = nouveau fond d'ecran immediat)
 - Boutons emoji 👍/👎 sur le flyout, pour l'image active uniquement
-- Rotation automatique (par defaut toutes les 4h) + changement manuel a la demande
+- Rotation automatique (par defaut toutes les 3h) + changement manuel a la demande
 - "👎 Je n'aime pas" bannit definitivement l'image (liste noire par hash SHA256)
 - "👍 J'aime" protege l'image de la suppression automatique et la fait revenir plus souvent
 
@@ -72,7 +72,7 @@ Tout est stocke dans `%LOCALAPPDATA%\SpotlightDesktop\` :
 
 | Cle                       | Defaut  | Description                                  |
 |---------------------------|---------|-----------------------------------------------|
-| `rotationIntervalMinutes` | `240`   | Intervalle de rotation automatique             |
+| `rotationIntervalMinutes` | `180`   | Intervalle de rotation automatique             |
 | `maxImages`                | `50`    | Nombre max d'images conservees                 |
 | `batchCount`               | `4`     | Images recuperees par appel API (max 4)        |
 | `locale` / `country`       | `fr-FR` / `FR` | Region demandee a l'API                |
