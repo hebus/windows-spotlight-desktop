@@ -49,12 +49,14 @@ public sealed class SpotlightEngine
 
     private static readonly TimeSpan MinRefreshInterval = TimeSpan.FromDays(1);
 
+    private bool IsRefreshDue() =>
+        _state.LastRefreshAt is null || DateTimeOffset.UtcNow - _state.LastRefreshAt >= MinRefreshInterval;
+
     public async Task InitializeAsync(CancellationToken ct = default)
     {
         _state = await _catalogStore.LoadAsync(ct);
 
-        var refreshDue = _state.LastRefreshAt is null || DateTimeOffset.UtcNow - _state.LastRefreshAt >= MinRefreshInterval;
-        if (_state.Images.Count == 0 || refreshDue)
+        if (_state.Images.Count == 0 || IsRefreshDue())
         {
             await RefreshFromApiAsync(ct);
         }
@@ -92,7 +94,7 @@ public sealed class SpotlightEngine
         try
         {
             var pending = _state.Images.Count(i => i.Hash != _state.CurrentImageHash);
-            if (pending < 3)
+            if (pending < 3 || IsRefreshDue())
             {
                 await RefreshFromApiAsync(ct);
             }
