@@ -58,6 +58,26 @@ Copy-Item "$publishDir\*" -Destination $installDir -Force -Exclude "*.pdb"
 Puis pointez l'entree de demarrage automatique (menu tray, voir plus bas) ou le raccourci
 vers `$installDir\SpotlightDesktop.exe`.
 
+## Rotation et rafraichissement des images
+
+Deux mecanismes distincts cohabitent :
+
+- **Rotation** (affichage) : toutes les `rotationIntervalMinutes` (3h par defaut),
+  l'application choisit une nouvelle image dans le pool deja telecharge
+  (`RotationSelector`, pondere par les "J'aime") et la definit comme fond d'ecran.
+  Une action manuelle (bouton "Suivante" du flyout/menu tray, like, dislike) redemarre
+  aussitot ce minuteur.
+- **Rafraichissement API** (contenu) : un nouvel appel a l'API Spotlight (jusqu'a
+  `batchCount` images) est declenche des que l'une de ces conditions est vraie :
+  - le pool d'images pas encore vues descend sous 3 ;
+  - plus de 24h se sont ecoulees depuis le dernier appel API reussi
+    (`CatalogState.LastRefreshAt`).
+
+  Cette seconde condition est verifiee au demarrage de l'application **et** a chaque
+  cycle de rotation automatique (`SpotlightEngine.ShowNextAsync`), ce qui garantit un
+  appel API reel au moins une fois par jour, meme si l'application reste ouverte en
+  continu pendant plusieurs jours sans redemarrage.
+
 ## Donnees et configuration
 
 Tout est stocke dans `%LOCALAPPDATA%\SpotlightDesktop\` :
