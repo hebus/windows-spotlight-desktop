@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Interop;
 using System.Windows.Threading;
 using SpotlightDesktop.Services;
 using Screen = System.Windows.Forms.Screen;
@@ -14,6 +15,18 @@ public partial class FlyoutWindow : Window
     [DllImport("shcore.dll")]
     private static extern int GetDpiForMonitor(IntPtr hmonitor, int dpiType, out uint dpiX, out uint dpiY);
 
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, uint flags);
+
+    [DllImport("user32.dll")]
+    private static extern bool GetWindowRect(IntPtr hWnd, out NativeRect rect);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeRect { public int Left, Top, Right, Bottom; }
+
+    private const uint SwpNoSize = 0x0001;
+    private const uint SwpNoZOrder = 0x0004;
+    private const uint SwpNoActivate = 0x0010;
     private const uint MonitorDefaultToNearest = 2;
 
     private readonly DispatcherTimer _autoHideTimer;
@@ -39,16 +52,26 @@ public partial class FlyoutWindow : Window
         var cursorPosition = System.Windows.Forms.Cursor.Position;
         var workingArea = Screen.FromPoint(cursorPosition).WorkingArea;
 
-        // Screen.WorkingArea est exprime en pixels physiques, mais Window.Left/Top de WPF
-        // attend des unites independantes de la resolution (DIP a 96 DPI). Sans conversion,
-        // sur un ecran mis a l'echelle (125%, 150%, ...), le flyout se retrouve hors champ.
-        double scale = GetDpiScaleForPoint(cursorPosition);
-
         Show();
+
+        // Positionnement en pixels physiques via l'API Win32 : Window.Left/Top (DIP) dependent du DPI
+        // de l'ecran ou se trouve deja la fenetre, ce qui decalait le flyout (parfois vers le haut).
+        // On place d'abord la fenetre dans l'angle de l'ecran cible (ce qui applique son DPI), puis on
+        // recale avec sa taille physique reelle. Le haut est toujours ancre : le flyout s'etend vers le bas.
+        var hwnd = new WindowInteropHelper(this).Handle;
+        const int margin = 16;
+        int scaledMargin = (int)Math.Round(margin * GetDpiScaleForPoint(cursorPosition));
+
+        SetWindowPos(hwnd, IntPtr.Zero, workingArea.Right - scaledMargin, workingArea.Top + scaledMargin,
+            0, 0, SwpNoSize | SwpNoZOrder | SwpNoActivate);
         UpdateLayout();
 
-        Left = workingArea.Right / scale - ActualWidth - 16;
-        Top = workingArea.Top / scale + 16;
+        if (GetWindowRect(hwnd, out var rect))
+        {
+            int width = rect.Right - rect.Left;
+            SetWindowPos(hwnd, IntPtr.Zero, workingArea.Right - width - scaledMargin, workingArea.Top + scaledMargin,
+                0, 0, SwpNoSize | SwpNoZOrder | SwpNoActivate);
+        }
 
         Activate();
         RestartAutoHide();
