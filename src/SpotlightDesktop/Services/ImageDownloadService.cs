@@ -18,11 +18,15 @@ public sealed class ImageDownloadService
         Directory.CreateDirectory(AppPaths.ImagesFolder);
     }
 
-    public async Task<SpotlightImage?> DownloadAsync(
+    /// <summary>
+    /// Telecharge l'image d'une annonce. <c>Hash</c> est renseigne des que l'image a pu etre telechargee
+    /// (meme si ignoree), <c>Image</c> uniquement pour une nouvelle image retenue.
+    /// </summary>
+    public async Task<(string? Hash, SpotlightImage? Image)> DownloadAsync(
         SpotlightAd ad, IReadOnlySet<string> knownHashes, IReadOnlySet<string> blacklistedHashes, CancellationToken ct)
     {
         var url = ad.LandscapeImage?.Asset;
-        if (string.IsNullOrEmpty(url)) return null;
+        if (string.IsNullOrEmpty(url)) return (null, null);
 
         byte[] bytes;
         try
@@ -32,7 +36,7 @@ public sealed class ImageDownloadService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Echec du telechargement de {Url}", url);
-            return null;
+            return (null, null);
         }
 
         var hash = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
@@ -40,13 +44,13 @@ public sealed class ImageDownloadService
         if (blacklistedHashes.Contains(hash))
         {
             _logger.LogInformation("Image {Hash} ignoree (liste noire).", hash);
-            return null;
+            return (hash, null);
         }
 
         if (knownHashes.Contains(hash))
         {
             _logger.LogInformation("Image {Hash} deja connue, ignoree.", hash);
-            return null;
+            return (hash, null);
         }
 
         var fileName = $"{hash}.jpg";
@@ -55,7 +59,7 @@ public sealed class ImageDownloadService
 
         _logger.LogInformation("Telecharge : {FileName} ({Title})", fileName, ad.Title);
 
-        return new SpotlightImage
+        return (hash, new SpotlightImage
         {
             Hash = hash,
             FileName = fileName,
@@ -67,6 +71,6 @@ public sealed class ImageDownloadService
             DownloadedAt = DateTimeOffset.UtcNow,
             Liked = false,
             ShowCount = 0
-        };
+        });
     }
 }

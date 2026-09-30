@@ -52,6 +52,11 @@ public sealed class SpotlightEngine
     private bool IsRefreshDue() =>
         _state.LastRefreshAt is null || DateTimeOffset.UtcNow - _state.LastRefreshAt >= MinRefreshInterval;
 
+    private static readonly TimeSpan FlyoutRefreshInterval = TimeSpan.FromMinutes(5);
+
+    private bool IsFlyoutRefreshDue() =>
+        _state.LastRefreshAt is null || DateTimeOffset.UtcNow - _state.LastRefreshAt >= FlyoutRefreshInterval;
+
     public async Task InitializeAsync(CancellationToken ct = default)
     {
         _state = await _catalogStore.LoadAsync(ct);
@@ -71,16 +76,51 @@ public sealed class SpotlightEngine
     public async Task RefreshFromApiAsync(CancellationToken ct = default)
     {
         var ads = await _apiClient.FetchBatchAsync(_settings.Country, _settings.Locale, _settings.BatchCount, ct);
+        if (ads.Count == 0)
+        {
+            // echec API : on ne purge rien, mais on evite de re-solliciter l'API a chaque ouverture du flyout
+            _state.LastRefreshAt = DateTimeOffset.UtcNow;
+            await _catalogStore.SaveAsync(_state, ct);
+            return;
+        }
+
         var knownHashes = _state.Images.Select(i => i.Hash).ToHashSet();
+        var returnedHashes = new HashSet<string>();
 
         foreach (var ad in ads)
         {
-            var image = await _downloadService.DownloadAsync(ad, knownHashes, _state.BlacklistedHashes, ct);
+            var existing = _state.Images.FirstOrDefault(i =>
+                i.SourceUrl is not null && i.SourceUrl == ad.LandscapeImage?.Asset);
+            if (existing is not null)
+            {
+                returnedHashes.Add(existing.Hash);
+                continue;
+            }
+
+            var (hash, image) = await _downloadService.DownloadAsync(ad, knownHashes, _state.BlacklistedHashes, ct);
+            if (hash is null) continue;
+
+            returnedHashes.Add(hash);
             if (image is not null)
             {
                 _state.Images.Add(image);
                 knownHashes.Add(image.Hash);
             }
+        }
+
+        // Le catalogue reflete l'API : une image (et son like) absente du lot est retiree.
+        // L'image courante est conservee pour ne pas casser le flyout, mais perd son like.
+        foreach (var stale in _state.Images.Where(i => !returnedHashes.Contains(i.Hash)).ToList())
+        {
+            if (stale.Hash == _state.CurrentImageHash)
+            {
+                stale.Liked = false;
+                continue;
+            }
+
+            _state.Images.Remove(stale);
+            var path = Path.Combine(AppPaths.ImagesFolder, stale.FileName);
+            if (File.Exists(path)) File.Delete(path);
         }
 
         _retentionService.Enforce(_state, _settings.MaxImages);
@@ -115,7 +155,7 @@ public sealed class SpotlightEngine
         try
         {
             var pending = _state.Images.Count(i => i.Hash != _state.CurrentImageHash);
-            if (pending < minCount)
+            if (pending < minCount || IsFlyoutRefreshDue())
             {
                 await RefreshFromApiAsync(ct);
             }

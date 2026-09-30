@@ -11,7 +11,7 @@ Application .NET (WPF + tray) qui recree l'experience Windows Spotlight
 - Boutons emoji 👍/👎 sur le flyout, pour l'image active uniquement
 - Rotation automatique (par defaut toutes les 3h) + changement manuel a la demande
 - "👎 Je n'aime pas" bannit definitivement l'image (liste noire par hash SHA256)
-- "👍 J'aime" protege l'image de la suppression automatique et la fait revenir plus souvent
+- "👍 J'aime" fait revenir l'image plus souvent, tant que l'API la retourne encore
 
 Ce projet remplace, pour l'usage bureau, le projet plus simple
 [windows-spotlight-sync](https://github.com/hebus/windows-spotlight-sync) (qui reste
@@ -71,7 +71,13 @@ Deux mecanismes distincts cohabitent :
   `batchCount` images) est declenche des que l'une de ces conditions est vraie :
   - le pool d'images pas encore vues descend sous 3 ;
   - plus de 24h se sont ecoulees depuis le dernier appel API reussi
-    (`CatalogState.LastRefreshAt`).
+    (`CatalogState.LastRefreshAt`) ;
+  - a l'ouverture du flyout, si le dernier appel date de plus de 5 minutes (les
+    suggestions changent ainsi a chaque ouverture, quand l'API renvoie un nouveau lot).
+
+  Le catalogue reflete ce que l'API renvoie : une image absente du dernier lot est
+  supprimee, et son "J'aime" avec elle (un favori n'est donc conserve que tant que l'API
+  le retourne encore). Si l'API echoue, rien n'est supprime.
 
   Cette seconde condition est verifiee au demarrage de l'application **et** a chaque
   cycle de rotation automatique (`SpotlightEngine.ShowNextAsync`), ce qui garantit un
