@@ -14,6 +14,7 @@ public sealed class FlyoutImageItem
     public required string Hash { get; init; }
     public BitmapImage? Thumbnail { get; init; }
     public bool IsActive { get; init; }
+    public bool IsLiked { get; init; }
 }
 
 public sealed class FlyoutViewModel : INotifyPropertyChanged
@@ -78,7 +79,7 @@ public sealed class FlyoutViewModel : INotifyPropertyChanged
             bitmap.Freeze();
         }
 
-        return new FlyoutImageItem { Hash = image.Hash, Thumbnail = bitmap, IsActive = isActive };
+        return new FlyoutImageItem { Hash = image.Hash, Thumbnail = bitmap, IsActive = isActive, IsLiked = image.Liked };
     }
 
     private void OnChanged([CallerMemberName] string? name = null)

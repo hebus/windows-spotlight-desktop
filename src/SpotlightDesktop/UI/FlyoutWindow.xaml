@@ -66,13 +66,25 @@
                     <DataTemplate>
                         <Border x:Name="Thumb" CornerRadius="6" Width="72" Height="72"
                                 BorderThickness="2" BorderBrush="Transparent" Margin="0,0,8,0" ClipToBounds="True">
-                            <Button Style="{StaticResource ThumbButtonStyle}"
-                                    Command="{Binding DataContext.SelectCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
-                                    CommandParameter="{Binding Hash}">
-                                <Image Source="{Binding Thumbnail}" Width="72" Height="72" Stretch="UniformToFill"/>
-                            </Button>
+                            <Grid>
+                                <Button Style="{StaticResource ThumbButtonStyle}"
+                                        Command="{Binding DataContext.SelectCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        CommandParameter="{Binding Hash}">
+                                    <Image Source="{Binding Thumbnail}" Width="72" Height="72" Stretch="UniformToFill"/>
+                                </Button>
+                                <TextBlock x:Name="LikedHeart" Text="&#10084;" Foreground="#FF5252" FontSize="14"
+                                           HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,2,4,0"
+                                           IsHitTestVisible="False" Visibility="Collapsed">
+                                    <TextBlock.Effect>
+                                        <DropShadowEffect ShadowDepth="0" BlurRadius="4" Color="Black" Opacity="0.8"/>
+                                    </TextBlock.Effect>
+                                </TextBlock>
+                            </Grid>
                         </Border>
                         <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding IsLiked}" Value="True">
+                                <Setter TargetName="LikedHeart" Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
                             <DataTrigger Binding="{Binding IsActive}" Value="True">
                                 <Setter TargetName="Thumb" Property="BorderBrush" Value="#4FC3F7"/>
                             </DataTrigger>
